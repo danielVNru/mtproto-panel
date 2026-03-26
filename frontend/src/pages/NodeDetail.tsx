@@ -17,6 +17,11 @@ import AddProxyDialog from '../components/AddProxyDialog';
 import EditProxyDialog from '../components/EditProxyDialog';
 import ProxyCard from '../components/ProxyCard';
 
+function FlagIcon({ code }: { code?: string }) {
+  if (!code || code.length !== 2) return null;
+  return <img src={`https://flagcdn.com/20x15/${code.toLowerCase()}.png`} alt={code} style={{ verticalAlign: 'middle', marginRight: 4 }} width={20} height={15} />;
+}
+
 export default function NodeDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -37,6 +42,7 @@ export default function NodeDetail() {
   const [blacklistLoading, setBlacklistLoading] = useState(false);
   const [blacklistSaving, setBlacklistSaving] = useState(false);
   const [blacklistLoaded, setBlacklistLoaded] = useState(false);
+  const [nodeGeo, setNodeGeo] = useState('');
 
   const loadData = useCallback(async () => {
     try {
@@ -56,6 +62,13 @@ export default function NodeDetail() {
 
   useEffect(() => {
     loadData();
+    // Lookup node geo
+    getNode(nodeId).then((n) => {
+      fetch(`http://ip-api.com/json/${n.ip}?fields=countryCode`)
+        .then((r) => r.json())
+        .then((d: any) => { if (d.countryCode) setNodeGeo(d.countryCode); })
+        .catch(() => {});
+    }).catch(() => {});
     // Load domains
     setDomainsLoading(true);
     getNodeDomains(nodeId)
@@ -145,7 +158,7 @@ export default function NodeDetail() {
         </Button>
         {node && (
           <>
-            <h2 style={{ margin: 0 }}>{node.name}</h2>
+            <h2 style={{ margin: 0, display: 'flex', alignItems: 'center' }}>{nodeGeo && <FlagIcon code={nodeGeo} />}{node.name}</h2>
             <Label theme="info">{node.ip}:{node.port}</Label>
           </>
         )}

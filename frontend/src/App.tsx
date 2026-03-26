@@ -3,6 +3,7 @@ import { isAuthenticated } from './api';
 import Login from './pages/Login';
 import Nodes from './pages/Nodes';
 import NodeDetail from './pages/NodeDetail';
+import ProxyDetail from './pages/ProxyDetail';
 import Proxies from './pages/Proxies';
 import Settings from './pages/Settings';
 import Layout from './components/Layout';
@@ -28,6 +29,14 @@ export default function App() {
         element={
           <PrivateRoute>
             <NodeDetail />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/nodes/:nodeId/proxy/:proxyId"
+        element={
+          <PrivateRoute>
+            <ProxyDetail />
           </PrivateRoute>
         }
       />

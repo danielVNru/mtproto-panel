@@ -187,3 +187,31 @@ html, body, #root {
   right: 24px;
   z-index: 1000;
 }
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.chart-container {
+  min-width: 0;
+}
+
+.ip-history-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ip-history-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: default;
+}
+
+.ip-history-date {
+  font-size: 11px;
+  color: var(--g-color-text-secondary);
+}

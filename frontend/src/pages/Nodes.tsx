@@ -4,6 +4,11 @@ import { Button, Card, Label, Loader } from '@gravity-ui/uikit';
 import { getNodes, deleteNode, checkNodeHealth, updateNodeService, getProxies, NodeData, ProxyData } from '../api';
 import AddNodeDialog from '../components/AddNodeDialog';
 
+function FlagIcon({ code }: { code?: string }) {
+  if (!code || code.length !== 2) return null;
+  return <img src={`https://flagcdn.com/20x15/${code.toLowerCase()}.png`} alt={code} style={{ verticalAlign: 'middle', marginRight: 4 }} width={20} height={15} />;
+}
+
 export default function Nodes() {
   const navigate = useNavigate();
   const [nodes, setNodes] = useState<NodeData[]>([]);
@@ -12,6 +17,7 @@ export default function Nodes() {
   const [healthMap, setHealthMap] = useState<Record<number, boolean | null>>({});
   const [updatingMap, setUpdatingMap] = useState<Record<number, boolean>>({});
   const [proxiesMap, setProxiesMap] = useState<Record<number, ProxyData[]>>({});
+  const [geoMap, setGeoMap] = useState<Record<string, string>>({});
 
   const loadNodes = async () => {
     try {
@@ -19,11 +25,32 @@ export default function Nodes() {
       setNodes(data);
       checkAllHealth(data);
       loadAllProxies(data);
+      lookupNodeGeo(data);
     } catch (err) {
       console.error('Failed to load nodes:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const lookupNodeGeo = async (nodeList: NodeData[]) => {
+    const ips = nodeList.map((n) => n.ip).filter((ip) => !geoMap[ip]);
+    if (ips.length === 0) return;
+    try {
+      const resp = await fetch('http://ip-api.com/batch?fields=query,countryCode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ips.map((ip) => ({ query: ip }))),
+      });
+      if (resp.ok) {
+        const data = await resp.json() as Array<{ query: string; countryCode?: string }>;
+        const map: Record<string, string> = {};
+        for (const entry of data) {
+          if (entry.countryCode) map[entry.query] = entry.countryCode;
+        }
+        setGeoMap((prev) => ({ ...prev, ...map }));
+      }
+    } catch {}
   };
 
   const loadAllProxies = async (nodeList: NodeData[]) => {
@@ -135,7 +162,7 @@ export default function Nodes() {
                           : 'Офлайн'
                     }
                   />
-                  <h3 style={{ margin: 0 }}>{node.name}</h3>
+                  <h3 style={{ margin: 0, display: 'flex', alignItems: 'center' }}>{geoMap[node.ip] && <FlagIcon code={geoMap[node.ip]} />}{node.name}</h3>
                 </div>
                 <Label theme="info" size="s">
                   Нода #{node.id}

@@ -170,4 +170,34 @@ router.post('/:nodeId/proxies/:proxyId/unpause', async (req: AuthRequest, res: R
   }
 });
 
+// Get proxy stats history
+router.get('/:nodeId/proxies/:proxyId/stats-history', async (req: AuthRequest, res: Response) => {
+  try {
+    const node = await getNodeWithToken(req.params.nodeId);
+    if (!node) {
+      res.status(404).json({ error: 'Node not found' });
+      return;
+    }
+    const result = await proxyToNode(node, 'GET', `/${req.params.proxyId}/stats-history`);
+    res.status(result.status).json(result.data);
+  } catch (error: any) {
+    res.status(502).json({ error: `Failed to connect to node: ${error.message}` });
+  }
+});
+
+// Get proxy IP history
+router.get('/:nodeId/proxies/:proxyId/ip-history', async (req: AuthRequest, res: Response) => {
+  try {
+    const node = await getNodeWithToken(req.params.nodeId);
+    if (!node) {
+      res.status(404).json({ error: 'Node not found' });
+      return;
+    }
+    const result = await proxyToNode(node, 'GET', `/${req.params.proxyId}/ip-history`);
+    res.status(result.status).json(result.data);
+  } catch (error: any) {
+    res.status(502).json({ error: `Failed to connect to node: ${error.message}` });
+  }
+});
+
 export default router;

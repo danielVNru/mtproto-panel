@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react';
-import { Dialog, Button, TextInput, TextArea, Alert, Select } from '@gravity-ui/uikit';
+import { Dialog, Button, TextInput, Alert, Select } from '@gravity-ui/uikit';
 import { createProxy, NodeData } from '../api';
 
 interface Props {
@@ -12,7 +12,6 @@ interface Props {
 
 export default function AddProxyDialog({ open, onClose, nodeId, nodes, onCreated }: Props) {
   const [selectedNodeId, setSelectedNodeId] = useState<string>(nodeId ? nodeId.toString() : '');
-  const [port, setPort] = useState('');
   const [domain, setDomain] = useState('');
   const [name, setName] = useState('');
   const [note, setNote] = useState('');
@@ -35,14 +34,12 @@ export default function AddProxyDialog({ open, onClose, nodeId, nodes, onCreated
 
     try {
       await createProxy(targetNodeId, {
-        port: port ? parseInt(port, 10) : undefined,
         domain: domain || undefined,
         tag: tag || undefined,
         name: name || undefined,
         note: note || undefined,
         maxConnections: maxConnections ? parseInt(maxConnections, 10) : undefined,
       });
-      setPort('');
       setDomain('');
       setName('');
       setNote('');
@@ -86,10 +83,6 @@ export default function AddProxyDialog({ open, onClose, nodeId, nodes, onCreated
           <div className="dialog-field">
             <label>Заметка (необязательно)</label>
             <TextInput value={note} onUpdate={setNote} placeholder="Описание" size="l" />
-          </div>
-          <div className="dialog-field">
-            <label>Порт (необязательно, случайный)</label>
-            <TextInput value={port} onUpdate={setPort} placeholder="Автоматически" size="l" type="number" />
           </div>
           <div className="dialog-field">
             <label>Fake TLS домен (необязательно, из пула)</label>

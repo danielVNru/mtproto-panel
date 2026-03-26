@@ -152,13 +152,29 @@ export interface ProxyStatsData {
 }
 
 export interface CreateProxyRequest {
-  port?: number;
   secret?: string;
   domain?: string;
   tag?: string;
   name?: string;
   note?: string;
   maxConnections?: number;
+}
+
+export interface StatsSnapshotData {
+  timestamp: string;
+  cpuPercent: number;
+  memoryBytes: number;
+  networkRxBytes: number;
+  networkTxBytes: number;
+  connectedCount: number;
+}
+
+export interface IpHistoryEntryData {
+  ip: string;
+  country?: string;
+  countryCode?: string;
+  firstSeen: string;
+  lastSeen: string;
 }
 
 export async function getProxies(nodeId: number): Promise<ProxyData[]> {
@@ -230,4 +246,14 @@ export async function updateNodeBlacklist(nodeId: number, ips: string[]): Promis
     body: JSON.stringify({ ips }),
   });
   return data.ips;
+}
+
+// Stats history
+export async function getProxyStatsHistory(nodeId: number, proxyId: string): Promise<StatsSnapshotData[]> {
+  return request<StatsSnapshotData[]>(`/nodes/${nodeId}/proxies/${proxyId}/stats-history`);
+}
+
+// IP history
+export async function getProxyIpHistory(nodeId: number, proxyId: string): Promise<IpHistoryEntryData[]> {
+  return request<IpHistoryEntryData[]>(`/nodes/${nodeId}/proxies/${proxyId}/ip-history`);
 }

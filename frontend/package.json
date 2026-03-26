@@ -12,7 +12,9 @@
     "@gravity-ui/icons": "^2.8.1",
     "@gravity-ui/navigation": "^2.15.0",
     "@gravity-ui/uikit": "^6.15.0",
+    "chart.js": "^4.5.1",
     "react": "^18.2.0",
+    "react-chartjs-2": "^5.3.1",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.21.3"
   },

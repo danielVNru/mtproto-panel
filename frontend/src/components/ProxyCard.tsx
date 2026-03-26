@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { Card, Button, Label, Icon, DropdownMenu } from '@gravity-ui/uikit';
-import { ChevronDown, ChevronRight } from '@gravity-ui/icons';
-import { getProxyStats, pauseProxy, unpauseProxy, ProxyData, ProxyStatsData, ConnectedIpInfo } from '../api';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, Button, Label, DropdownMenu } from '@gravity-ui/uikit';
+import { pauseProxy, unpauseProxy, ProxyData } from '../api';
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -9,14 +9,6 @@ function formatBytes(bytes: number): string {
   const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-}
-
-function countryFlag(countryCode?: string): string {
-  if (!countryCode || countryCode.length !== 2) return '';
-  const offset = 0x1f1e6;
-  const a = countryCode.toUpperCase().charCodeAt(0) - 65 + offset;
-  const b = countryCode.toUpperCase().charCodeAt(1) - 65 + offset;
-  return String.fromCodePoint(a, b);
 }
 
 interface Props {
@@ -31,30 +23,8 @@ interface Props {
 }
 
 export default function ProxyCard({ proxy, nodeId, nodeName, copied, onEdit, onDelete, onCopyLink, onStatusChange }: Props) {
-  const [stats, setStats] = useState<ProxyStatsData | null>(null);
-  const [showStats, setShowStats] = useState(false);
-  const [loadingStats, setLoadingStats] = useState(false);
+  const navigate = useNavigate();
   const [togglingPause, setTogglingPause] = useState(false);
-
-  const loadStats = async () => {
-    setLoadingStats(true);
-    try {
-      const data = await getProxyStats(nodeId, proxy.id);
-      setStats(data);
-    } catch {
-      setStats(null);
-    } finally {
-      setLoadingStats(false);
-    }
-  };
-
-  useEffect(() => {
-    if (showStats) {
-      loadStats();
-      const interval = setInterval(loadStats, 10000);
-      return () => clearInterval(interval);
-    }
-  }, [showStats]);
 
   const statusTheme = proxy.status === 'running' ? 'success' : proxy.status === 'stopped' || proxy.status === 'paused' ? 'warning' : 'danger';
   const statusLabel = proxy.status === 'running' ? 'работает' : proxy.status === 'paused' ? 'пауза' : proxy.status === 'stopped' ? 'остановлен' : 'ошибка';
@@ -75,10 +45,13 @@ export default function ProxyCard({ proxy, nodeId, nodeName, copied, onEdit, onD
     }
   };
 
-  const handleStatsToggle = () => {
-    const next = !showStats;
-    setShowStats(next);
-    if (next && !stats) loadStats();
+  const handleCardClick = () => {
+    navigate(`/nodes/${nodeId}/proxy/${proxy.id}`);
+  };
+
+  const stopProp = (fn: () => void) => (e: React.MouseEvent) => {
+    e.stopPropagation();
+    fn();
   };
 
   const menuItems = [
@@ -93,7 +66,7 @@ export default function ProxyCard({ proxy, nodeId, nodeName, copied, onEdit, onD
   ];
 
   return (
-    <Card view="outlined" style={{ padding: 20 }}>
+    <Card type="action" view="outlined" style={{ padding: 20, cursor: 'pointer' }} onClick={handleCardClick}>
       <div className="proxy-card-header">
         <span style={{ fontWeight: 600, fontSize: 15 }}>{proxy.name || `Proxy ${proxy.id}`}</span>
         <Label theme={statusTheme} size="s">
@@ -118,16 +91,6 @@ export default function ProxyCard({ proxy, nodeId, nodeName, copied, onEdit, onD
         <span>{proxy.domain}</span>
       </div>
       <div className="proxy-card-field">
-        <span className="label">Создано</span>
-        <span>{new Date(proxy.createdAt).toLocaleString()}</span>
-      </div>
-      {proxy.tag && (
-        <div className="proxy-card-field">
-          <span className="label">Тег</span>
-          <span>{proxy.tag}</span>
-        </div>
-      )}
-      <div className="proxy-card-field">
         <span className="label">Трафик ↑</span>
         <span>{formatBytes(proxy.trafficUp || 0)}</span>
       </div>
@@ -142,80 +105,18 @@ export default function ProxyCard({ proxy, nodeId, nodeName, copied, onEdit, onD
         </div>
       )}
 
-      {/* Аккордеон статистики */}
-      <div
-        onClick={handleStatsToggle}
-        style={{
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          marginTop: 10,
-          padding: '8px 0',
-          borderTop: '1px solid var(--g-color-line-generic)',
-          fontSize: 13,
-          color: 'var(--g-color-text-secondary)',
-          userSelect: 'none',
-        }}
-      >
-        <Icon data={showStats ? ChevronDown : ChevronRight} size={14} />
-        Статистика
-        {loadingStats && <span style={{ fontSize: 11, marginLeft: 4 }}>загрузка...</span>}
-      </div>
-
-      {showStats && stats && (
-        <div style={{ paddingBottom: 4 }}>
-          <div className="stats-grid">
-            <div className="stat-item">
-              <div className="stat-value">{stats.cpuPercent}</div>
-              <div className="stat-label">CPU</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-value">{stats.memoryUsage}</div>
-              <div className="stat-label">Память</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-value">{stats.networkRx}</div>
-              <div className="stat-label">Вход</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-value">{stats.networkTx}</div>
-              <div className="stat-label">Исход</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-value">{stats.uptime}</div>
-              <div className="stat-label">Аптайм</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-value">{stats.connectedIps?.length || 0}</div>
-              <div className="stat-label">IP</div>
-            </div>
-          </div>
-          {stats.connectedIps && stats.connectedIps.length > 0 && (
-            <div style={{ marginTop: 8 }}>
-              <div style={{ fontSize: 12, color: 'var(--g-color-text-secondary)', marginBottom: 4 }}>Подключенные IP:</div>
-              <div style={{ fontSize: 12, fontFamily: 'monospace', lineHeight: 1.6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                {stats.connectedIps.map((info: ConnectedIpInfo) => (
-                  <Label key={info.ip} size="xs">
-                    {info.countryCode ? countryFlag(info.countryCode) + ' ' : ''}{info.ip}
-                  </Label>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Футер: слева — DropdownMenu, справа — Ссылка */}
       <div className="proxy-card-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <DropdownMenu
-          size="s"
-          items={menuItems}
-        />
+        <span onClick={(e) => e.stopPropagation()}>
+          <DropdownMenu
+            size="s"
+            items={menuItems}
+          />
+        </span>
         <Button
           view="action"
           size="s"
-          onClick={onCopyLink}
+          onClick={stopProp(onCopyLink)}
         >
           {copied ? '✓ Скопировано!' : 'Ссылка'}
         </Button>
