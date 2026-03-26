@@ -1,0 +1,48 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: mtproto-panel-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-mtproto_panel}
+      POSTGRES_USER: ${DB_USER:-mtproto}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-mtproto}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-mtproto} -d ${DB_NAME:-mtproto_panel}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: mtproto-panel-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: "3000"
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-mtproto_panel}
+      DB_USER: ${DB_USER:-mtproto}
+      DB_PASSWORD: ${DB_PASSWORD:-mtproto}
+      JWT_SECRET: ${JWT_SECRET}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+
+  frontend:
+    build: ./frontend
+    container_name: mtproto-panel-frontend
+    restart: unless-stopped
+    ports:
+      - "${PORT:-80}:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

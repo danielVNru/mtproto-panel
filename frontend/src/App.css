@@ -1,0 +1,189 @@
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--g-color-base-background);
+  color: var(--g-color-text-primary);
+}
+
+.app-content {
+  flex: 1;
+  padding: 24px;
+  max-width: 100%;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+  overflow-y: auto;
+  height: 100vh;
+}
+
+.login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.login-card {
+  width: 400px;
+  padding: 32px;
+}
+
+.login-card h2 {
+  margin: 0 0 24px 0;
+  text-align: center;
+}
+
+.form-field {
+  margin-bottom: 16px;
+}
+
+.form-field label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: var(--g-color-text-secondary);
+}
+
+.nodes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.node-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.node-card {
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.node-card:hover {
+  transform: translateY(-2px);
+}
+
+.node-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.proxies-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.proxy-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 16px;
+}
+
+.proxy-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.proxy-card-field {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 13px;
+}
+
+.proxy-card-field .label {
+  color: var(--g-color-text-secondary);
+}
+
+.proxy-card-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--g-color-line-generic);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.stat-item {
+  background: var(--g-color-base-generic);
+  border-radius: 8px;
+  padding: 8px 12px;
+  text-align: center;
+}
+
+.stat-item .stat-value {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.stat-item .stat-label {
+  font-size: 11px;
+  color: var(--g-color-text-secondary);
+  margin-top: 2px;
+}
+
+.dialog-field {
+  margin-bottom: 16px;
+}
+
+.dialog-field label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: var(--g-color-text-secondary);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px;
+  color: var(--g-color-text-secondary);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-badge.running {
+  background: var(--g-color-base-positive-light);
+  color: var(--g-color-text-positive);
+}
+
+.status-badge.stopped {
+  background: var(--g-color-base-warning-light);
+  color: var(--g-color-text-warning);
+}
+
+.status-badge.error {
+  background: var(--g-color-base-danger-light);
+  color: var(--g-color-text-danger);
+}
+
+.toast-message {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+}
