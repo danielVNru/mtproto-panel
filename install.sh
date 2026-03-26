@@ -33,18 +33,19 @@ fi
 
 if ! docker compose version &> /dev/null 2>&1; then
     echo -e "${YELLOW}Docker Compose не найден. Устанавливаю...${NC}"
-    if command -v apt-get &> /dev/null; then
-        apt-get update -qq && apt-get install -y -qq docker-compose-plugin
-    elif command -v yum &> /dev/null; then
-        yum install -y -q docker-compose-plugin
-    else
-        echo -e "${RED}Не удалось установить Docker Compose. Установите вручную.${NC}"
-        exit 1
-    fi
+    COMPOSE_VERSION=$(curl -fsSL https://api.github.com/repos/docker/compose/releases/latest | grep '"tag_name"' | cut -d'"' -f4)
+    COMPOSE_VERSION=${COMPOSE_VERSION:-v2.34.0}
+    ARCH=$(uname -m)
+    [ "$ARCH" = "x86_64" ] && ARCH="x86_64"
+    [ "$ARCH" = "aarch64" ] && ARCH="aarch64"
+    mkdir -p /usr/local/lib/docker/cli-plugins
+    curl -fsSL "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-linux-${ARCH}" \
+        -o /usr/local/lib/docker/cli-plugins/docker-compose
+    chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 fi
 
 if ! docker compose version &> /dev/null 2>&1; then
-    echo -e "${RED}Docker Compose v2 всё ещё не найден. Проверьте установку Docker.${NC}"
+    echo -e "${RED}Не удалось установить Docker Compose.${NC}"
     exit 1
 fi
 
