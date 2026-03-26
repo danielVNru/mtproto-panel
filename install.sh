@@ -32,7 +32,19 @@ if ! command -v docker &> /dev/null; then
 fi
 
 if ! docker compose version &> /dev/null 2>&1; then
-    echo -e "${RED}Docker Compose не найден. Установите Docker Compose v2.${NC}"
+    echo -e "${YELLOW}Docker Compose не найден. Устанавливаю...${NC}"
+    if command -v apt-get &> /dev/null; then
+        apt-get update -qq && apt-get install -y -qq docker-compose-plugin
+    elif command -v yum &> /dev/null; then
+        yum install -y -q docker-compose-plugin
+    else
+        echo -e "${RED}Не удалось установить Docker Compose. Установите вручную.${NC}"
+        exit 1
+    fi
+fi
+
+if ! docker compose version &> /dev/null 2>&1; then
+    echo -e "${RED}Docker Compose v2 всё ещё не найден. Проверьте установку Docker.${NC}"
     exit 1
 fi
 
