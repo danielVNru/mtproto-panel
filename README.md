@@ -41,7 +41,7 @@
 Одна команда для загрузки и запуска:
 
 ```bash
-bash <(wget -qO- https://raw.githubusercontent.com/danielVNru/mtproto-panel/master/panel/install.sh)
+wget -qO /tmp/panel-install.sh https://raw.githubusercontent.com/danielVNru/mtproto-panel/master/install.sh && sudo bash /tmp/panel-install.sh
 ```
 
 Скрипт автоматически:
@@ -54,14 +54,13 @@ bash <(wget -qO- https://raw.githubusercontent.com/danielVNru/mtproto-panel/mast
 4. Сгенерирует JWT-секрет и пароль БД
 5. Соберёт и запустит все контейнеры
 
-Панель установится в `/opt/mtproto-panel/panel`.
+Панель установится в `/opt/mtproto-panel`.
 
 ## Обновление
 
 ```bash
 cd /opt/mtproto-panel
 git pull origin master
-cd panel
 docker compose up -d --build
 ```
 
