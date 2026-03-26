@@ -200,4 +200,19 @@ router.get('/:nodeId/proxies/:proxyId/ip-history', async (req: AuthRequest, res:
   }
 });
 
+// Clear proxy history
+router.delete('/:nodeId/proxies/:proxyId/clear-history', async (req: AuthRequest, res: Response) => {
+  try {
+    const node = await getNodeWithToken(req.params.nodeId);
+    if (!node) {
+      res.status(404).json({ error: 'Node not found' });
+      return;
+    }
+    const result = await proxyToNode(node, 'DELETE', `/${req.params.proxyId}/clear-history`);
+    res.status(result.status).json(result.data);
+  } catch (error: any) {
+    res.status(502).json({ error: `Failed to connect to node: ${error.message}` });
+  }
+});
+
 export default router;

@@ -24,7 +24,7 @@ export default function Settings() {
           <TextInput value={username} size="l" disabled />
         </div>
         <div style={{ marginTop: 8 }}>
-          <Label theme="info" size="s">
+          <Label theme="info" size="xs">
             Для смены пароля обновите переменную ADMIN_PASSWORD и перезапустите бэкенд.
           </Label>
         </div>

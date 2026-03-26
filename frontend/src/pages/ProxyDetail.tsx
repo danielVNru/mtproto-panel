@@ -1,10 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button, Card, Loader, Label, Alert } from '@gravity-ui/uikit';
+import { Button, Card, Loader, Label, Alert, Tooltip } from '@gravity-ui/uikit';
 import { Line } from 'react-chartjs-2';
+import zoomPlugin from 'chartjs-plugin-zoom';
+import 'chartjs-adapter-date-fns';
+import { ru } from 'date-fns/locale';
 import {
   Chart as ChartJS,
-  CategoryScale,
+  TimeScale,
   LinearScale,
   PointElement,
   LineElement,
@@ -20,6 +23,7 @@ import {
   getProxyStatsHistory,
   getProxyIpHistory,
   getNodeBlacklist,
+  clearProxyHistory,
   pauseProxy,
   unpauseProxy,
   NodeData,
@@ -29,7 +33,7 @@ import {
   IpHistoryEntryData,
 } from '../api';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, ChartTooltip, Legend, Filler);
+ChartJS.register(TimeScale, LinearScale, PointElement, LineElement, Title, ChartTooltip, Legend, Filler, zoomPlugin);
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -59,7 +63,9 @@ export default function ProxyDetail() {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [togglingPause, setTogglingPause] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const [nodeGeo, setNodeGeo] = useState('');
+  const chartRef = useRef<any>(null);
 
   const loadStats = useCallback(async () => {
     if (!proxyId) return;
@@ -157,6 +163,20 @@ export default function ProxyDetail() {
     }
   };
 
+  const handleClearHistory = async () => {
+    if (!proxyId) return;
+    setClearing(true);
+    try {
+      await clearProxyHistory(nodeId, proxyId);
+      setStatsHistory([]);
+      setIpHistory([]);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setClearing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: 48 }}>
@@ -171,71 +191,106 @@ export default function ProxyDetail() {
   const statusTheme = stats?.status === 'running' ? 'success' : stats?.status === 'paused' ? 'warning' : 'danger';
   const statusLabel = stats?.status === 'running' ? 'работает' : stats?.status === 'paused' ? 'пауза' : stats?.status === 'stopped' ? 'остановлен' : 'ошибка';
 
-  // Chart data
-  const chartLabels = statsHistory.map((s) =>
-    new Date(s.timestamp).toLocaleString('ru-RU', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })
-  );
-  const chartOptions = {
+  // Chart data — use {x, y} points with Date objects for TimeScale
+  const toPoint = (s: StatsSnapshotData, value: number) => ({ x: new Date(s.timestamp), y: value });
+
+  const combinedChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: false as const,
     interaction: { intersect: false, mode: 'index' as const },
     plugins: {
       legend: { position: 'top' as const },
+      tooltip: { mode: 'index' as const, intersect: false },
+      zoom: {
+        pan: {
+          enabled: true,
+          mode: 'x' as const,
+        },
+        zoom: {
+          wheel: { enabled: true },
+          pinch: { enabled: true },
+          mode: 'x' as const,
+        },
+        limits: {
+          x: { minRange: 10 * 60 * 1000 },
+        },
+      },
     },
     scales: {
-      x: { ticks: { maxTicksLimit: 12 } },
+      x: {
+        type: 'time' as const,
+        time: {
+          tooltipFormat: 'dd.MM HH:mm',
+          displayFormats: {
+            minute: 'HH:mm',
+            hour: 'dd.MM HH:mm',
+          },
+        },
+        adapters: { date: { locale: ru } },
+        ticks: { maxTicksLimit: 12 },
+      },
+      y: {
+        type: 'linear' as const,
+        position: 'left' as const,
+        title: { display: true, text: 'Подключения / CPU %' },
+      },
+      y1: {
+        type: 'linear' as const,
+        position: 'right' as const,
+        title: { display: true, text: 'МБ' },
+        grid: { drawOnChartArea: false },
+      },
     },
   };
 
-  const connectionsChartData = {
-    labels: chartLabels,
+  const combinedChartData = {
     datasets: [
       {
         label: 'Подключения',
-        data: statsHistory.map((s) => s.connectedCount),
+        data: statsHistory.map((s) => toPoint(s, s.connectedCount)),
+        yAxisID: 'y',
         borderColor: 'rgb(75, 192, 192)',
         backgroundColor: 'rgba(75, 192, 192, 0.1)',
-        fill: true,
+        fill: false,
+        pointRadius: 1,
         tension: 0.3,
       },
-    ],
-  };
-
-  const trafficChartData = {
-    labels: chartLabels,
-    datasets: [
+      {
+        label: 'CPU %',
+        data: statsHistory.map((s) => toPoint(s, s.cpuPercent)),
+        yAxisID: 'y',
+        borderColor: 'rgb(255, 159, 64)',
+        fill: false,
+        pointRadius: 1,
+        tension: 0.3,
+      },
       {
         label: 'Вход (MB)',
-        data: statsHistory.map((s) => +(s.networkRxBytes / 1048576).toFixed(2)),
+        data: statsHistory.map((s) => toPoint(s, +(s.networkRxBytes / 1048576).toFixed(2))),
+        yAxisID: 'y1',
         borderColor: 'rgb(54, 162, 235)',
         backgroundColor: 'rgba(54, 162, 235, 0.1)',
-        fill: true,
+        fill: false,
+        pointRadius: 1,
         tension: 0.3,
       },
       {
         label: 'Исход (MB)',
-        data: statsHistory.map((s) => +(s.networkTxBytes / 1048576).toFixed(2)),
+        data: statsHistory.map((s) => toPoint(s, +(s.networkTxBytes / 1048576).toFixed(2))),
+        yAxisID: 'y1',
         borderColor: 'rgb(255, 99, 132)',
-        backgroundColor: 'rgba(255, 99, 132, 0.1)',
-        fill: true,
-        tension: 0.3,
-      },
-    ],
-  };
-
-  const cpuMemChartData = {
-    labels: chartLabels,
-    datasets: [
-      {
-        label: 'CPU %',
-        data: statsHistory.map((s) => s.cpuPercent),
-        borderColor: 'rgb(255, 159, 64)',
+        fill: false,
+        pointRadius: 1,
         tension: 0.3,
       },
       {
         label: 'Память (MB)',
-        data: statsHistory.map((s) => +(s.memoryBytes / 1048576).toFixed(2)),
+        data: statsHistory.map((s) => toPoint(s, +(s.memoryBytes / 1048576).toFixed(2))),
+        yAxisID: 'y1',
         borderColor: 'rgb(153, 102, 255)',
+        fill: false,
+        pointRadius: 1,
         tension: 0.3,
       },
     ],
@@ -331,29 +386,25 @@ export default function ProxyDetail() {
         </Card>
       )}
 
-      {/* Stats history charts */}
+      {/* Stats history chart */}
       {statsHistory.length > 1 && (
         <Card view="outlined" style={{ padding: 20, marginBottom: 20 }}>
-          <h3 style={{ margin: '0 0 16px' }}>История</h3>
-          <div className="charts-grid">
-            <div className="chart-container">
-              <h4 style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--g-color-text-secondary)' }}>Подключения</h4>
-              <div style={{ height: 200 }}>
-                <Line data={connectionsChartData} options={chartOptions} />
-              </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <h3 style={{ margin: 0 }}>Статистика</h3>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Button size="xs" view="outlined" onClick={() => chartRef.current?.resetZoom()}>
+                Сбросить зум
+              </Button>
+              <Button size="xs" view="outlined-danger" onClick={handleClearHistory} loading={clearing}>
+                Очистить историю
+              </Button>
             </div>
-            <div className="chart-container">
-              <h4 style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--g-color-text-secondary)' }}>Трафик</h4>
-              <div style={{ height: 200 }}>
-                <Line data={trafficChartData} options={chartOptions} />
-              </div>
-            </div>
-            <div className="chart-container">
-              <h4 style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--g-color-text-secondary)' }}>CPU / Память</h4>
-              <div style={{ height: 200 }}>
-                <Line data={cpuMemChartData} options={chartOptions} />
-              </div>
-            </div>
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--g-color-text-secondary)', marginBottom: 8 }}>
+            Колёсико мыши — приближение, зажатая ЛКМ — прокрутка. Клик по легенде — скрыть/показать линию.
+          </div>
+          <div style={{ height: 350 }}>
+            <Line ref={chartRef} data={combinedChartData} options={combinedChartOptions} />
           </div>
         </Card>
       )}
@@ -367,22 +418,23 @@ export default function ProxyDetail() {
               const isConnected = connectedIpSet.has(entry.ip);
               const isBlacklisted = blacklist.has(entry.ip);
               const theme = isConnected ? 'success' : isBlacklisted ? 'danger' : 'info';
-              const tooltipText = [
-                entry.country ? `Страна: ${entry.country}` : '',
-                `Первое подключение: ${new Date(entry.firstSeen).toLocaleString('ru-RU')}`,
-                `Последнее: ${new Date(entry.lastSeen).toLocaleString('ru-RU')}`,
-                isBlacklisted ? '⛔ В чёрном списке' : '',
-              ].filter(Boolean).join('\n');
+              const tooltipContent = (
+                <div style={{ fontSize: 12, lineHeight: 1.6 }}>
+                  {entry.country && <div>Страна: {entry.country}</div>}
+                  <div>Первое подключение: {new Date(entry.firstSeen).toLocaleString('ru-RU')}</div>
+                  <div>Последнее: {new Date(entry.lastSeen).toLocaleString('ru-RU')}</div>
+                  {isBlacklisted && <div style={{ color: 'var(--g-color-text-danger)' }}>⛔ В чёрном списке</div>}
+                </div>
+              );
 
               return (
-                <div key={entry.ip} className="ip-history-item" title={tooltipText}>
-                  <Label theme={theme} size="s">
-                    {entry.countryCode && <FlagIcon code={entry.countryCode} size={16} />}{entry.ip}
-                  </Label>
-                  <span className="ip-history-date">
-                    {new Date(entry.lastSeen).toLocaleString('ru-RU')}
-                  </span>
-                </div>
+                <Tooltip key={entry.ip} content={tooltipContent} placement="top" openDelay={300}>
+                  <div className="ip-history-item" tabIndex={0}>
+                    <Label theme={theme} size="s">
+                      {entry.countryCode && <FlagIcon code={entry.countryCode} size={16} />}{entry.ip}
+                    </Label>
+                  </div>
+                </Tooltip>
               );
             })}
           </div>

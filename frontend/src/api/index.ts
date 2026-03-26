@@ -257,3 +257,8 @@ export async function getProxyStatsHistory(nodeId: number, proxyId: string): Pro
 export async function getProxyIpHistory(nodeId: number, proxyId: string): Promise<IpHistoryEntryData[]> {
   return request<IpHistoryEntryData[]>(`/nodes/${nodeId}/proxies/${proxyId}/ip-history`);
 }
+
+// Clear proxy history
+export async function clearProxyHistory(nodeId: number, proxyId: string): Promise<void> {
+  await request(`/nodes/${nodeId}/proxies/${proxyId}/clear-history`, { method: 'DELETE' });
+}
