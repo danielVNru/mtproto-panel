@@ -143,7 +143,7 @@ export default function AddProxyDialog({ open, onClose, nodeId, nodes, onCreated
               <div className="dialog-field">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                   <label style={{ margin: 0 }}>Исходящий трафик</label>
-                  <HelpMark>VPN-подписка или туннель. VPN работает через VLESS/SOCKS5, а промо Telegram не гарантируется. Туннель идет через SSH/OpenVPN, промо работает при правильно настроенном NAT IP.</HelpMark>
+                  <HelpMark>VPN-подписка или туннель. VPN работает через VLESS/Trojan/SOCKS5, а промо Telegram не гарантируется. Туннель идет через SSH/OpenVPN, промо работает при правильно настроенном NAT IP.</HelpMark>
                 </div>
                 <RadioButton
                   value={outboundMode}
@@ -157,8 +157,8 @@ export default function AddProxyDialog({ open, onClose, nodeId, nodes, onCreated
               </div>
               {outboundMode === 'vpn' && (
                 <div className="dialog-field">
-                  <label>VLESS URL или socks5:// (опционально)</label>
-                  <TextInput value={vpnSubscription} onUpdate={setVpnSubscription} placeholder="https://... или socks5://127.0.0.1:10808" size="l" />
+                  <label>VLESS/Trojan URL или socks5:// (опционально)</label>
+                  <TextInput value={vpnSubscription} onUpdate={setVpnSubscription} placeholder="https://... , trojan://... или socks5://127.0.0.1:10808" size="l" />
                 </div>
               )}
               {outboundMode === 'tunnel' && (
