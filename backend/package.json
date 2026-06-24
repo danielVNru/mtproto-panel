@@ -1,6 +1,6 @@
 {
   "name": "mtproto-panel-backend",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "MTProto panel backend",
   "main": "dist/index.js",
   "scripts": {

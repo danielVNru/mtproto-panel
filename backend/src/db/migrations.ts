@@ -39,15 +39,13 @@ export async function runMigrations(): Promise<void> {
 export async function createAdminUser(username: string, password: string): Promise<void> {
   const client = await pool.connect();
   try {
-    const existing = await client.query('SELECT id FROM users WHERE username = $1', [username]);
-    if (existing.rows.length > 0) {
-      console.log('Admin user already exists');
-      return;
-    }
-
     const hash = await bcrypt.hash(password, 12);
-    await client.query('INSERT INTO users (username, password_hash) VALUES ($1, $2)', [username, hash]);
-    console.log(`Admin user "${username}" created`);
+    await client.query(
+      `INSERT INTO users (username, password_hash) VALUES ($1, $2)
+       ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash`,
+      [username, hash]
+    );
+    console.log(`Admin user "${username}" created or updated`);
   } finally {
     client.release();
   }

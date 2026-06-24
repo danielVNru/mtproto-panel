@@ -67,8 +67,6 @@ services:
     ports:
       - "80:80"
       - "${PORT:-443}:443"
-    volumes:
-      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - backend
 

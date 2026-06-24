@@ -206,8 +206,8 @@ EOF
 
 chmod 600 .env
 
-# Cleanup legacy files from repo root (old versions stored them there)
-for f in ".env" "nginx-ssl.conf" "docker-compose.override.yml"; do
+# Cleanup legacy generated files that must not be tracked by git
+for f in "nginx-ssl.conf" "docker-compose.override.yml"; do
     [ -f "$INSTALL_DIR/$f" ] && rm -f "$INSTALL_DIR/$f"
 done
 [ -d "$INSTALL_DIR/ssl" ] && rm -rf "$INSTALL_DIR/ssl"
@@ -341,8 +341,8 @@ EOF
     sed -i "s/^PORT=.*/PORT=${SSL_HTTP_PORT}/" .env
 fi
 
-# Build and start
-echo -e "${CYAN}Сборка и запуск панели...${NC}"
+# Pull and start
+echo -e "${CYAN}Загрузка образов и запуск панели...${NC}"
 # Remove mtproto-net if it exists without proper compose labels (created bare by service-node)
 if docker network inspect mtproto-net &>/dev/null; then
     LABELS=$(docker network inspect mtproto-net --format '{{json .Labels}}')
@@ -352,7 +352,20 @@ if docker network inspect mtproto-net &>/dev/null; then
         docker network rm mtproto-net 2>/dev/null || true
     fi
 fi
-BUILDX_NO_DEFAULT_ATTESTATIONS=1 docker compose up -d --build
+
+# Фиксируем имя проекта, чтобы volume pgdata всегда именовался одинаково
+export COMPOSE_PROJECT_NAME=mtproto-panel
+
+echo -e "${CYAN}Загрузка образов из реестра...${NC}"
+if docker compose pull 2>/dev/null; then
+    echo -e "${GREEN}  Образы успешно загружены.${NC}"
+else
+    echo -e "${YELLOW}  Не удалось загрузить образы из реестра, собираем локально...${NC}"
+    BUILDX_NO_DEFAULT_ATTESTATIONS=1 DOCKER_BUILDKIT=1 docker compose build
+fi
+
+echo -e "${CYAN}Запуск панели...${NC}"
+docker compose up -d
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}Ошибка при запуске контейнеров.${NC}"

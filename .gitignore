@@ -4,3 +4,5 @@
 /frontend/nginx.dev.conf
 /docker-compose.dev.yml
 /frontend/Dockerfile.dev
+docker-compose.override.yml
+nginx-ssl.conf
