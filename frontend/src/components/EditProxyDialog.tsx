@@ -2,7 +2,7 @@ import { useState, FormEvent, useEffect } from 'react';
 import { Dialog, TextInput, Alert, Button, RadioButton, HelpMark, Tabs } from '@gravity-ui/uikit';
 import { updateProxy, ProxyData } from '../api';
 import { copyToClipboard } from '../utils/clipboard';
-import { DEFAULT_ADVANCED, AdvancedOptions, TelemtFields } from './TelemtFields';
+import { DEFAULT_ADVANCED, AdvancedOptions, TelemtFields, normalizeBooleanLike } from './TelemtFields';
 
 interface Props {
   open: boolean;
@@ -45,7 +45,7 @@ function proxyToAdvanced(proxy: ProxyData): AdvancedOptions {
     stunServers: proxy.stunServers ? proxy.stunServers.join(', ') : DEFAULT_ADVANCED.stunServers,
     serverClientMss: proxy.serverClientMss ?? DEFAULT_ADVANCED.serverClientMss,
     censorshipTlsDomain: proxy.censorshipTlsDomain ?? DEFAULT_ADVANCED.censorshipTlsDomain,
-    censorshipTlsEmulation: proxy.censorshipTlsEmulation ?? DEFAULT_ADVANCED.censorshipTlsEmulation,
+    censorshipTlsEmulation: normalizeBooleanLike(proxy.censorshipTlsEmulation, DEFAULT_ADVANCED.censorshipTlsEmulation),
     censorshipTlsFrontDir: proxy.censorshipTlsFrontDir ?? DEFAULT_ADVANCED.censorshipTlsFrontDir,
     meInitRetryAttempts: proxy.meInitRetryAttempts ?? DEFAULT_ADVANCED.meInitRetryAttempts,
   };
@@ -96,7 +96,7 @@ export default function EditProxyDialog({ open, onClose, nodeId, proxy, onUpdate
     setLoading(true);
 
     try {
-      const { stunServers: stunStr, censorshipTlsDomain: censD, censorshipTlsFrontDir: censFD, ...restOpts } = advancedOptions;
+      const { stunServers: stunStr, censorshipTlsDomain: censD, censorshipTlsEmulation: censTE, censorshipTlsFrontDir: censFD, ...restOpts } = advancedOptions;
       await updateProxy(nodeId, proxy.id, {
         name: name !== (proxy.name || '') ? name : undefined,
         note: note !== (proxy.note || '') ? note : undefined,
@@ -117,6 +117,7 @@ export default function EditProxyDialog({ open, onClose, nodeId, proxy, onUpdate
         ...restOpts,
         stunServers: stunStr.split(',').map((s) => s.trim()).filter(Boolean),
         censorshipTlsDomain: censD || undefined,
+        censorshipTlsEmulation: normalizeBooleanLike(censTE, DEFAULT_ADVANCED.censorshipTlsEmulation),
         censorshipTlsFrontDir: censFD || undefined,
       });
       onUpdated();

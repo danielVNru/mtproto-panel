@@ -1,7 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { Dialog, TextInput, Alert, Select, RadioButton, HelpMark, Tabs } from '@gravity-ui/uikit';
 import { createProxy, NodeData } from '../api';
-import { DEFAULT_ADVANCED, AdvancedOptions, TelemtFields } from './TelemtFields';
+import { DEFAULT_ADVANCED, AdvancedOptions, TelemtFields, normalizeBooleanLike } from './TelemtFields';
 
 interface Props {
   open: boolean;
@@ -42,7 +42,7 @@ export default function AddProxyDialog({ open, onClose, nodeId, nodes, onCreated
     setLoading(true);
 
     try {
-      const { stunServers: stunStr, censorshipTlsDomain: censD, censorshipTlsFrontDir: censFD, ...restOpts } = advancedOptions;
+      const { stunServers: stunStr, censorshipTlsDomain: censD, censorshipTlsEmulation: censTE, censorshipTlsFrontDir: censFD, ...restOpts } = advancedOptions;
       await createProxy(targetNodeId, {
         domain: domain || undefined,
         tag: tag || undefined,
@@ -57,6 +57,7 @@ export default function AddProxyDialog({ open, onClose, nodeId, nodes, onCreated
         ...restOpts,
         stunServers: stunStr.split(',').map((s) => s.trim()).filter(Boolean),
         censorshipTlsDomain: censD || undefined,
+        censorshipTlsEmulation: normalizeBooleanLike(censTE, DEFAULT_ADVANCED.censorshipTlsEmulation),
         censorshipTlsFrontDir: censFD || undefined,
       });
       setDomain('');

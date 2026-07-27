@@ -1,6 +1,16 @@
 import { Dispatch, SetStateAction } from 'react';
 import { Select, TextInput, HelpMark } from '@gravity-ui/uikit';
 
+export function normalizeBooleanLike(value: unknown, fallback: boolean): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+  }
+  return fallback;
+}
+
 export const DEFAULT_ADVANCED = {
   useMiddleProxy: true,
   fastMode: true,
@@ -279,7 +289,7 @@ always — SO_LINGER(0) устанавливается при accept() и ник
         <TextInput
           value={opts.censorshipTlsFrontDir}
           onUpdate={upd('censorshipTlsFrontDir')}
-          placeholder="tls"
+          placeholder="tlsfront"
           size="l"
         />
       </div>
